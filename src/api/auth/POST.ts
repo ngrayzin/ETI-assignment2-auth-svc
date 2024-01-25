@@ -2,12 +2,10 @@ import express from 'express';
 import { returnError, returnSuccess, returnUnauthorized } from "../utility";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, getAuth, updateProfile } from "firebase/auth";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { OAuth2Client } from 'google-auth-library';
-import { googleClientId } from '../../../firebaseConfig';
+import { getAuth as adminGetAuth } from 'firebase-admin/auth';
 
 const auth = getAuth();
 const db = getFirestore();
-const client = new OAuth2Client(googleClientId);
 
 const app = express();
 export default app;
@@ -51,11 +49,11 @@ app.post('/login', async (req, res) => {
     if(email === undefined || password === undefined){
       returnError(res, ["Invalid parameters"]);
     }
+    console.log("/login")
     await signInWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
-      // Signed up 
       const user = userCredential.user;
-      returnSuccess(res, user);
+      returnSuccess(res, user.providerData[0]);
     })
     .catch((error) => {
       const errorCode = error.code;
@@ -70,39 +68,9 @@ app.post('/login', async (req, res) => {
 
 app.post('/google-login', async (req, res) => {
   try {
-    const { token } = req.body;
+    //req.body
 
-    // Verify Google ID token
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: googleClientId,
-    });
-
-    const payload = ticket.getPayload();
-    const userId = payload['sub'];
-    const userEmail = payload['email'];
-
-    // Check if the user already exists in Firestore
-    const usersCollection = collection(db, 'users');
-    const userDoc = doc(usersCollection, userId);
-
-    const userSnapshot = await getDoc(userDoc);
-
-    if (userSnapshot.exists()) {
-      // User already exists, retrieve user data
-      const userData = userSnapshot.data();
-      returnSuccess(res, { success: true, user: userData });
-    } else {
-      // User doesn't exist, create a new user
-      const newUser = {
-        email: userEmail,
-        createdAt: serverTimestamp(),
-      };
-
-      await setDoc(userDoc, newUser);
-
-      returnSuccess(res, { success: true, user: newUser });
-    }
+    returnSuccess(res, { success: true, user: {}});
   } catch (error) {
     console.error(error);
     returnError(res,  ['Failed to authenticate with Google'])

@@ -7,8 +7,10 @@ const API_PORT = process.env.API_PORT || 3018;
 
 const firebase = initializeApp(firebaseConfig);
 
+
 import { getAuth } from "firebase/auth";
 import authAPI from './api/auth';
+import { getFirestore as adminFireStore} from 'firebase-admin/firestore';
 const auth = getAuth(firebase);
 
 const app = express();
@@ -16,7 +18,7 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost',
-    'http://localhost:3018',
+    'http://localhost:3000',
   ],
   credentials: true,
 }));
