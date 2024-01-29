@@ -3,6 +3,7 @@ import { returnError, returnSuccess, returnUnauthorized } from "../utility";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, getAuth, updateProfile } from "firebase/auth";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { getAuth as adminGetAuth } from 'firebase-admin/auth';
+import e from 'express';
 
 const auth = getAuth();
 const db = getFirestore();
@@ -68,14 +69,36 @@ app.post('/login', async (req, res) => {
 
 app.post('/google-login', async (req, res) => {
   try {
-    //req.body
+    const data = req.body;
 
-    returnSuccess(res, { success: true, user: {}});
+    console.log("/google-login");
+
+    // Save additional user details to Firestore
+    const usersCollection = collection(db, 'users');
+    const userDoc = doc(usersCollection, data.uid);
+    const userSnapshot = await getDoc(userDoc);
+
+    if (userSnapshot.exists()) {
+      // Document exists
+      const userData = userSnapshot.data();
+      returnSuccess(res, userData);
+    } else {
+      // Document doesn't exist, create a new user
+      await setDoc(userDoc, {
+        email: data.email,
+        profilePic: data.photoURL || '', // Use provided profilePic or empty string if not provided
+        createdAt: serverTimestamp(), // Timestamp of user creation
+      });
+      
+      // Return success response
+      returnSuccess(res, {});
+    }
   } catch (error) {
     console.error(error);
-    returnError(res,  ['Failed to authenticate with Google'])
+    returnError(res, ['Failed to authenticate with Google']);
   }
 });
+
 
 app.post('/logout', async (req, res) => {
     signOut(auth).then(() => {
