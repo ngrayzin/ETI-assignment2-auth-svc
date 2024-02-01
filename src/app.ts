@@ -4,9 +4,9 @@ import bodyParser from 'body-parser';
 import { initializeApp } from 'firebase/app';
 import firebaseConfig from '../firebaseConfig';
 const API_PORT = process.env.API_PORT || 3018;
+import fileUpload from 'express-fileupload';
 
 const firebase = initializeApp(firebaseConfig);
-
 
 import { getAuth } from "firebase/auth";
 import authAPI from './api/auth';
@@ -24,6 +24,7 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use(fileUpload());
 app.use(bodyParser.json());
 // Your API routes go here
 app.use(

@@ -2,11 +2,12 @@ import express from 'express';
 import { returnError, returnSuccess, returnUnauthorized } from "../utility";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, getAuth, updateProfile } from "firebase/auth";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { getAuth as adminGetAuth } from 'firebase-admin/auth';
-import e from 'express';
+import { getStorage, ref, uploadBytes } from "firebase/storage";
+import { UploadedFile } from 'express-fileupload';
 
 const auth = getAuth();
 const db = getFirestore();
+const storage = getStorage();
 
 const app = express();
 export default app;
@@ -99,6 +100,27 @@ app.post('/google-login', async (req, res) => {
   }
 });
 
+app.post('/changeProfilePic', async (req, res) => {
+  const fileArray = Object.values(req.files);
+  if (!req.files) {
+    returnError(res, ['No files uploaded']);
+  } 
+
+  for (const file of fileArray as UploadedFile[]) {
+    console.log(file.data);
+    const fileBuffer = file.data;
+    const storageRef = ref(storage);
+    const imagesRef = ref(storageRef, 'profilePics');
+    uploadBytes(imagesRef, fileBuffer).then((snapshot) => {
+        console.log(snapshot);
+        console.log('Uploaded a blob or file!');
+        returnSuccess(res, {snapshot});
+    }).catch((error) => {
+        console.error('Error uploading file:', error);
+        returnError(res, ['Error uploading file.']);
+    });
+  }
+});
 
 app.post('/logout', async (req, res) => {
     signOut(auth).then(() => {
